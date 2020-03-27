@@ -145,6 +145,9 @@ class Screen {
 }
 
 class Stage {
+  static get GRID_WIDTH() {
+    return 8;
+  }
   constructor() {
     const data = [
       "11111111111111111111111111111111",
@@ -162,8 +165,8 @@ class Stage {
       "10000000000000200000000020000001",
       "10000000000000000000000000000001",
       "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
+      "10000000000000000200020000000001",
+      "10000000000000000022200000000001",
       "10000000000000000000000000000001",
       "10000000000000000000000000000001",
       "10000000000000000000000000000001",
@@ -190,7 +193,9 @@ class Stage {
   }
   reset() {
     ship.reset(new Vector2(16 * 8 + 4, 24 * 8 + 4));
-    enemies.reset(new Vector2(8 * 8, 8 * 8));
+    enemies.reset();
+    shots.reset();
+    bullets.reset();
     for (let y = 0; y < 32; ++y) {
       for (let x = 0; x < 32; ++x) {
         if (this._table[y][x] === '2') {
@@ -213,12 +218,39 @@ class Stage {
       }
     }
   }
+  isHit(pos) {
+    const posByGrid = { x: Math.floor(pos.x / 8), y: Math.floor(pos.y / 8) };
+    if (posByGrid.x < 0 || posByGrid.y < 0 || 32 <= posByGrid.x || 32 <= posByGrid.y) {
+      return true;
+    }
+    return this._table[posByGrid.y][posByGrid.x] === '1';
+  }
+  pushOut(pos, radius) {
+    const gw = Stage.GRID_WIDTH;
+    const posL = pos.clone().add(new Vector2(-radius, 0));
+    if (this.isHit(posL)) {
+      pos.x = Math.ceil(posL.x / gw) * gw + radius;
+    }
+    const posR = pos.clone().add(new Vector2(radius, 0));
+    if (this.isHit(posR)) {
+      pos.x = Math.floor(posR.x / gw) * gw - radius;
+    }
+    const posU = pos.clone().add(new Vector2(0, -radius));
+    if (this.isHit(posU)) {
+      pos.y = Math.ceil(posU.y / gw) * gw + radius;
+    }
+    const posD = pos.clone().add(new Vector2(0, radius));
+    if (this.isHit(posD)) {
+      pos.y = Math.floor(posD.y / gw) * gw - radius;
+    }
+  }
 }
 
 class Ship {
   constructor() {
     this._pos = new Vector2();
     this._vel = new Vector2();
+    this._countToShot = 0;
   }
   reset(pos) {
     this._pos = pos;
@@ -242,8 +274,13 @@ class Ship {
     const vel = velSign.multiplyScalar(4);
     vel.clampLength(0, 4);
     this._pos.add(vel);
-    if (controller.isButtonTriggered('MOUSE_BUTTON_LEFT')) {
+    stage.pushOut(this._pos, 4);
+    if (this._countToShot > 0) {
+      this._countToShot--;
+    }
+    if (controller.isButtonHeld('MOUSE_BUTTON_LEFT') && this._countToShot === 0) {
       new Shot(this._pos, controller.mousePosition.clone().sub(this._pos).normalize().multiplyScalar(8));
+      this._countToShot = 4;
     }
     const ctx = document.querySelector('.screen').getContext('2d');
     ctx.fillStyle = '#0f0';
@@ -318,13 +355,11 @@ class Shot {
   constructor(pos, vel) {
     this._pos = new Vector2(pos);
     this._vel = new Vector2(vel);
-    this._count = 0;
     shots.append(this);
   }
   update() {
     this._pos.add(this._vel);
-    this._count++;
-    if (this._count > 10) {
+    if (stage.isHit(this._pos)) {
       shots.remove(this);
       return;
     }
@@ -344,6 +379,9 @@ class Shot {
 
 class Shots {
   constructor() {
+    this._shots = [];
+  }
+  reset() {
     this._shots = [];
   }
   append(shot) {
@@ -371,6 +409,10 @@ class Bullet {
       bullets.remove(this);
       return;
     }
+    if (stage.isHit(this._pos)) {
+      bullets.remove(this);
+      return;
+    }
     if (ship.isHit(this._pos)) {
         ship.onHit();
         return;
@@ -383,6 +425,9 @@ class Bullet {
 
 class Bullets {
   constructor() {
+    this._bullets = [];
+  }
+  reset() {
     this._bullets = [];
   }
   append(bullet) {
