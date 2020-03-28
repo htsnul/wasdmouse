@@ -1,3 +1,78 @@
+const stageDatas = [
+  {
+    table: [
+      "################################",
+      "#                              #",
+      "# # # #  ##   ### ###          #",
+      "# # # # #  # #    #  #         #",
+      "# # # # ####  ##  #  #         #",
+      "# # # # #  #    # #  #         #",
+      "#  # #  #  # ###  ###          #",
+      "#                              #",
+      "# #   #  ##  #  #  ### ####    #",
+      "# ## ## #  # #  # #    #       #",
+      "# # # # #  # #  #  ##  ###     #",
+      "# #   # #  # #  #    # #       #",
+      "# #   #  ##   ##  ###  ####    #",
+      "#                              #",
+      "#                              #",
+      "#              a               #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#              #               #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#              S               #",
+      "#                              #",
+      "#                              #",
+      "################################",
+    ]
+  },
+  {
+    table: [
+      "################################",
+      "#                              #",
+      "# a                         a  #",
+      "#                              #",
+      "#   #######################    #",
+      "#   #                     #    #",
+      "#   # a                a  #    #",
+      "#   #                     #    #",
+      "#   #   ##############    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #  a      a  #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #  a      a  #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #            #    #    #",
+      "#   #   #                 #    #",
+      "#   #   #              a  #    #",
+      "#   #   #                 #    #",
+      "#   #   ###################    #",
+      "#   #                          #",
+      "# S # a                     a  #",
+      "#   #                          #",
+      "################################",
+    ]
+  }
+];
+
 class Vector2 {
   constructor() {
     if (arguments.length == 1) {
@@ -145,61 +220,55 @@ class Screen {
 }
 
 class Stage {
-  static get GRID_WIDTH() {
+  static get CELL_WIDTH() {
     return 8;
   }
+  static get WIDTH_IN_CELL() {
+    return 32;
+  }
   constructor() {
-    const data = [
-      "11111111111111111111111111111111",
-      "10000000000000000000000000000001",
-      "10101010011100011110111100000001",
-      "10101010100010100000100010000001",
-      "10101010111110011100100010000001",
-      "10101010100010000010100010000001",
-      "10010100100010111100111100000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000200000000020000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000200020000000001",
-      "10000000000000000022200000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000011111111111111111110000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "10000000000000000000000000000001",
-      "11111111111111111111111111111111",
-    ];
+    this._index = 0;
     this._table = [];
-    for (let y = 0; y < 32; ++y) {
+    for (let y = 0; y < Stage.WIDTH_IN_CELL; ++y) {
       this._table[y] = [];
-      for (let x = 0; x < 32; ++x) {
-        this._table[y][x] = data[y][x];
+    }
+  }
+  _getStartPosition() {
+    for (let y = 0; y < Stage.WIDTH_IN_CELL; ++y) {
+      for (let x = 0; x < Stage.WIDTH_IN_CELL; ++x) {
+        if (this._table[y][x] === 'S') {
+          return new Vector2(Stage.CELL_WIDTH * (x + 0.5), Stage.CELL_WIDTH * (y + 0.5));
+        }
       }
     }
   }
+  goToFirstStage() {
+    this._index = 0
+    this.reset();
+  }
+  goToNextStage() {
+    this._index++;
+    if (this._index >= stageDatas.length) {
+      this._index = 0
+    }
+    this.reset();
+  }
   reset() {
-    ship.reset(new Vector2(16 * 8 + 4, 24 * 8 + 4));
+    const stageData = stageDatas[this._index];
+    const tableData = stageData.table;
+    for (let y = 0; y < Stage.WIDTH_IN_CELL; ++y) {
+      for (let x = 0; x < Stage.WIDTH_IN_CELL; ++x) {
+        this._table[y][x] = tableData[y][x];
+      }
+    }
+    ship.reset(this._getStartPosition());
     enemies.reset();
     shots.reset();
     bullets.reset();
-    for (let y = 0; y < 32; ++y) {
-      for (let x = 0; x < 32; ++x) {
-        if (this._table[y][x] === '2') {
-          new Enemy(new Vector2(8 * x, 8 * y));
+    for (let y = 0; y < Stage.WIDTH_IN_CELL; ++y) {
+      for (let x = 0; x < Stage.WIDTH_IN_CELL; ++x) {
+        if (this._table[y][x] === 'a') {
+          new Enemy(new Vector2(Stage.CELL_WIDTH * (x + 0.5), Stage.CELL_WIDTH * (y + 0.5)));
         }
       }
     }
@@ -207,41 +276,46 @@ class Stage {
   update() {
     const ctx = document.querySelector('.screen').getContext('2d');
     ctx.fillStyle = '#ccc';
-    for (let y = 0; y < 32; ++y) {
-      for (let x = 0; x < 32; ++x) {
-        if (this._table[y][x] === '0') {
+    const cw = Stage.CELL_WIDTH;
+    const wic = Stage.WIDTH_IN_CELL;
+    for (let y = 0; y < wic; ++y) {
+      for (let x = 0; x < wic; ++x) {
+        if (this._table[y][x] === ' ') {
           continue;
         }
-        if (this._table[y][x] === '1') {
-          ctx.fillRect(8 * x, 8 * y, 8, 8);
+        if (this._table[y][x] === '#') {
+          ctx.fillRect(cw * x, cw * y, cw, cw);
         }
       }
     }
   }
-  isHit(pos) {
+  _getCell(pos) {
     const posByGrid = { x: Math.floor(pos.x / 8), y: Math.floor(pos.y / 8) };
     if (posByGrid.x < 0 || posByGrid.y < 0 || 32 <= posByGrid.x || 32 <= posByGrid.y) {
-      return true;
+      return undefined;
     }
-    return this._table[posByGrid.y][posByGrid.x] === '1';
+    return this._table[posByGrid.y][posByGrid.x];
+  }
+  isHit(pos) {
+    return this._getCell(pos) === '#';
   }
   pushOut(pos, radius) {
-    const gw = Stage.GRID_WIDTH;
+    const cw = Stage.CELL_WIDTH;
     const posL = pos.clone().add(new Vector2(-radius, 0));
     if (this.isHit(posL)) {
-      pos.x = Math.ceil(posL.x / gw) * gw + radius;
+      pos.x = Math.ceil(posL.x / cw) * cw + radius;
     }
     const posR = pos.clone().add(new Vector2(radius, 0));
     if (this.isHit(posR)) {
-      pos.x = Math.floor(posR.x / gw) * gw - radius;
+      pos.x = Math.floor(posR.x / cw) * cw - radius;
     }
     const posU = pos.clone().add(new Vector2(0, -radius));
     if (this.isHit(posU)) {
-      pos.y = Math.ceil(posU.y / gw) * gw + radius;
+      pos.y = Math.ceil(posU.y / cw) * cw + radius;
     }
     const posD = pos.clone().add(new Vector2(0, radius));
     if (this.isHit(posD)) {
-      pos.y = Math.floor(posD.y / gw) * gw - radius;
+      pos.y = Math.floor(posD.y / cw) * cw - radius;
     }
   }
 }
@@ -272,14 +346,14 @@ class Ship {
       velSign.y = +1;
     }
     const vel = velSign.multiplyScalar(4);
-    vel.clampLength(0, 4);
+    vel.clampLength(0, 3);
     this._pos.add(vel);
     stage.pushOut(this._pos, 4);
     if (this._countToShot > 0) {
       this._countToShot--;
     }
     if (controller.isButtonHeld('MOUSE_BUTTON_LEFT') && this._countToShot === 0) {
-      new Shot(this._pos, controller.mousePosition.clone().sub(this._pos).normalize().multiplyScalar(8));
+      new Shot(this._pos, controller.mousePosition.clone().sub(this._pos).normalize().multiplyScalar(6));
       this._countToShot = 4;
     }
     const ctx = document.querySelector('.screen').getContext('2d');
@@ -290,7 +364,7 @@ class Ship {
     return pos.clone().sub(this._pos).length() <= 4;
   }
   onHit(pos) {
-    stage.reset();
+    stage.goToFirstStage();
   }
 }
 
@@ -298,7 +372,7 @@ class Enemy {
   constructor(pos) {
     this._pos = new Vector2(pos);
     this._vel = new Vector2(0, 0);
-    this._hp = 5;
+    this._hp = 4;
     this._count = 0;
     this._shouldFlash = false;
     enemies.append(this);
@@ -307,7 +381,7 @@ class Enemy {
     this._pos.add(this._vel);
     this._count++;
     if (this._count > 10) {
-      new Bullet(this._pos, ship.position.clone().sub(this._pos).normalize().multiplyScalar(4));
+      new Bullet(this._pos, ship.position.clone().sub(this._pos).normalize().multiplyScalar(3));
       this._count = 0;
     }
     const ctx = document.querySelector('.screen').getContext('2d');
@@ -342,6 +416,9 @@ class Enemies {
   }
   remove(enemy) {
     this._enemies = this._enemies.filter(e => e !== enemy);
+  }
+  get isEmpty() {
+    return this._enemies.length === 0;
   }
   findHit(pos) {
     return this._enemies.find(e => e.isHit(pos));
@@ -405,10 +482,6 @@ class Bullet {
   update() {
     this._pos.add(this._vel);
     this._count++;
-    if (this._count > 40) {
-      bullets.remove(this);
-      return;
-    }
     if (stage.isHit(this._pos)) {
       bullets.remove(this);
       return;
@@ -453,13 +526,15 @@ function update() {
   const ctx = document.querySelector('.screen').getContext('2d');
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, 256, 256);
+  if (enemies.isEmpty) {
+    stage.goToNextStage();
+  }
   stage.update();
   ship.update();
   enemies.update();
   shots.update();
   bullets.update();
   controller.updatePrev();
-  setTimeout(update, 100);
 }
 
 onload = () => {
@@ -471,6 +546,6 @@ onload = () => {
   shots = new Shots();
   bullets = new Bullets();
   stage.reset();
-  update();
+  setInterval(update, 100);
 };
 
