@@ -39,38 +39,110 @@ const stageDatas = [
     table: [
       "################################",
       "#                              #",
-      "# a                         a  #",
       "#                              #",
-      "#   #######################    #",
-      "#   #                     #    #",
-      "#   # a                a  #    #",
-      "#   #                     #    #",
-      "#   #   ##############    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #  a      a  #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #  a      a  #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #            #    #    #",
-      "#   #   #                 #    #",
-      "#   #   #              a  #    #",
-      "#   #   #                 #    #",
-      "#   #   ###################    #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#          ##########          #",
+      "#                              #",
+      "#                              #",
+      "#       #              #       #",
+      "#       #   a      a   #       #",
+      "#       #              #       #",
+      "#       #              #       #",
+      "#       #              #       #",
+      "#       #              #       #",
+      "#       #              #       #",
+      "#       #              #       #",
+      "#       #   a      a   #       #",
+      "#       #              #       #",
+      "#                              #",
+      "#                              #",
+      "#          ##########          #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#              S               #",
+      "#                              #",
+      "################################",
+    ]
+  },
+  {
+    table: [
+      "################################",
+      "#                              #",
+      "# a                          a #",
+      "#                              #",
+      "#   ########################   #",
+      "#   #                      #   #",
+      "#   #                    a #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                    a #   #",
+      "#   #                      #   #",
+      "#   #   ####################   #",
       "#   #                          #",
-      "# S # a                     a  #",
+      "# S # a                      a #",
       "#   #                          #",
       "################################",
     ]
-  }
+  },
+  {
+    table: [
+      "################################",
+      "#########              #########",
+      "########  a             ########",
+      "#######                  #######",
+      "######     ##########     ######",
+      "#####     #          #     #####",
+      "####     #            #     ####",
+      "###     #              #     ###",
+      "##     #                #     ##",
+      "#     #                  #     #",
+      "#    #                    #  a #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #            a         #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #                      #   #",
+      "#   #   #                  #   #",
+      "#   # a  #                #    #",
+      "#   #     #              #     #",
+      "#   ##     #            #     ##",
+      "#   ###     #          #     ###",
+      "#   ####     #        #     ####",
+      "#   #####     #      #     #####",
+      "#   ######     ######     ######",
+      "#   #######              #######",
+      "# S ########         a  ########",
+      "#   #########          #########",
+      "################################",
+    ]
+  },
 ];
 
 class Vector2 {
@@ -192,10 +264,16 @@ class Controller {
 }
 
 class Screen {
+  static get WIDTH() {
+    return 256;
+  }
+  static get HEIGHT() {
+    return 256;
+  }
   constructor() {
     this._elm = document.createElement('canvas');
-    this._elm.width = 256;
-    this._elm.height = 256;
+    this._elm.width = Screen.WIDTH;
+    this._elm.height = Screen.HEIGHT;
     this._elm.className = 'screen';
     this._elm.style.border = '1px solid #888';
     this._elm.style.imageRendering = 'pixelated';
@@ -204,9 +282,6 @@ class Screen {
     document.body.style.display = 'flex';
     document.body.style.justifyContent = 'center';
     document.body.appendChild(this._elm);
-    const ctx = this._elm.getContext('2d');
-    ctx.fillStyle = '#f00';
-    ctx.fillRect(0, 0, 8, 8);
   }
   clientToScreen(pos) {
     const borderWidth = 1;
@@ -216,6 +291,74 @@ class Screen {
       Math.round((pos.x - (clientRect.x + borderWidth)) / scale),
       Math.round((pos.y - (clientRect.y + borderWidth)) / scale)
     );
+  }
+  beginFrame() {
+    const ctx = this._elm.getContext('2d');
+    this._imageData = ctx.getImageData(0, 0, 256, 256);
+    this.clear();
+  }
+  endFrame() {
+    const ctx = this._elm.getContext('2d');
+    ctx.putImageData(this._imageData, 0, 0);
+  }
+  clear() {
+    for (let i = 0; i < 256 * 256; ++i) {
+      this._imageData.data[4 * i + 0] = 0;
+      this._imageData.data[4 * i + 1] = 0;
+      this._imageData.data[4 * i + 2] = 0;
+      this._imageData.data[4 * i + 3] = 255;
+    }
+  }
+  drawSquare(pos, width, color) {
+    const cx = Math.floor(pos.x);
+    const cy = Math.floor(pos.y);
+    const hw = width / 2;
+    let xs = cx - hw;
+    let xe = cx + hw;
+    let ys = cy - hw;
+    let ye = cy + hw;
+    if (xe < 0 || xs >= Screen.WIDTH || ye < 0 || ys >= Screen.HEIGHT) {
+      return;
+    }
+    xs = Math.max(xs, 0);
+    xe = Math.min(xe, Screen.WIDTH);
+    ys = Math.max(ys, 0);
+    ye = Math.min(ye, Screen.HEIGHT);
+    for (let y = ys; y < ye; ++y) {
+      for (let x = xs; x < xe; ++x) {
+        const i = Screen.WIDTH * y + x;
+        this._imageData.data[4 * i + 0] = color[0];
+        this._imageData.data[4 * i + 1] = color[1];
+        this._imageData.data[4 * i + 2] = color[2];
+      }
+    }
+  }
+  drawCircle(pos, radius, color) {
+    const cx = Math.floor(pos.x);
+    const cy = Math.floor(pos.y);
+    let ys = cy - radius;
+    let ye = cy + radius;
+    if (ye < 0 || ys >= Screen.HEIGHT) {
+      return;
+    }
+    ys = Math.max(ys, 0);
+    ye = Math.min(ye, Screen.HEIGHT);
+    for (let y = ys; y < ye; ++y) {
+      const hx = Math.floor(Math.sqrt((radius + 0.5) * (radius + 0.5) - ((y + 0.5) - cy) * ((y + 0.5) - cy)));
+      let xs = cx - hx;
+      let xe = cx + hx;
+      if (xe < 0 || xs >= Screen.WIDTH) {
+        continue;
+      }
+      xs = Math.max(xs, 0);
+      xe = Math.min(xe, Screen.WIDTH);
+      for (let x = xs; x < xe; ++x) {
+        const i = Screen.WIDTH * y + x;
+        this._imageData.data[4 * i + 0] = color[0];
+        this._imageData.data[4 * i + 1] = color[1];
+        this._imageData.data[4 * i + 2] = color[2];
+      }
+    }
   }
 }
 
@@ -274,8 +417,6 @@ class Stage {
     }
   }
   update() {
-    const ctx = document.querySelector('.screen').getContext('2d');
-    ctx.fillStyle = '#ccc';
     const cw = Stage.CELL_WIDTH;
     const wic = Stage.WIDTH_IN_CELL;
     for (let y = 0; y < wic; ++y) {
@@ -284,7 +425,7 @@ class Stage {
           continue;
         }
         if (this._table[y][x] === '#') {
-          ctx.fillRect(cw * x, cw * y, cw, cw);
+          screen.drawSquare(new Vector2(cw * (x + 0.5), cw * (y + 0.5)), cw, [128, 128, 128]);
         }
       }
     }
@@ -346,19 +487,17 @@ class Ship {
       velSign.y = +1;
     }
     const vel = velSign.multiplyScalar(4);
-    vel.clampLength(0, 3);
+    vel.clampLength(0, 4);
     this._pos.add(vel);
     stage.pushOut(this._pos, 4);
     if (this._countToShot > 0) {
       this._countToShot--;
     }
     if (controller.isButtonHeld('MOUSE_BUTTON_LEFT') && this._countToShot === 0) {
-      new Shot(this._pos, controller.mousePosition.clone().sub(this._pos).normalize().multiplyScalar(6));
+      new Shot(this._pos, controller.mousePosition.clone().sub(this._pos).normalize().multiplyScalar(8));
       this._countToShot = 4;
     }
-    const ctx = document.querySelector('.screen').getContext('2d');
-    ctx.fillStyle = '#0f0';
-    ctx.fillRect(Math.round(this._pos.x - 4), Math.round(this._pos.y - 4), 8, 8);
+    screen.drawCircle(this._pos, 4, [255, 255, 255]);
   }
   isHit(pos) {
     return pos.clone().sub(this._pos).length() <= 4;
@@ -381,19 +520,18 @@ class Enemy {
     this._pos.add(this._vel);
     this._count++;
     if (this._count > 10) {
-      new Bullet(this._pos, ship.position.clone().sub(this._pos).normalize().multiplyScalar(3));
+      new Bullet(this._pos, ship.position.clone().sub(this._pos).normalize().multiplyScalar(8));
       this._count = 0;
     }
-    const ctx = document.querySelector('.screen').getContext('2d');
-    ctx.fillStyle = '#f00';
+    let color = [224, 128, 128];
     if (this._shouldFlash) {
-      ctx.fillStyle = '#fff';
+      color = [255, 255, 255];
       this._shouldFlash = false;
     }
-    ctx.fillRect(Math.round(this._pos.x - 4), Math.round(this._pos.y - 4), 8, 8);
+    screen.drawCircle(this._pos, 4, color);
   }
-  isHit(pos) {
-    return pos.clone().sub(this._pos).length() <= 4;
+  isHit(pos, offset = 0) {
+    return pos.clone().sub(this._pos).length() <= 4 + offset;
   }
   onHit(pos) {
     this._hp--;
@@ -420,8 +558,8 @@ class Enemies {
   get isEmpty() {
     return this._enemies.length === 0;
   }
-  findHit(pos) {
-    return this._enemies.find(e => e.isHit(pos));
+  findHit(pos, offset = 0) {
+    return this._enemies.find(e => e.isHit(pos, offset));
   }
   update() {
     this._enemies.forEach(enemy => enemy.update());
@@ -441,16 +579,14 @@ class Shot {
       return;
     }
     {
-        const hitEnemy = enemies.findHit(this._pos);
+        const hitEnemy = enemies.findHit(this._pos, 4);
         if (hitEnemy !== undefined) {
             hitEnemy.onHit();
             shots.remove(this);
             return;
         }
     }
-    const ctx = document.querySelector('.screen').getContext('2d');
-    ctx.fillStyle = '#0f0';
-    ctx.fillRect(Math.round(this._pos.x - 2), Math.round(this._pos.y - 2), 4, 4);
+    screen.drawCircle(this._pos, 2, [128, 128, 255]);
   }
 }
 
@@ -490,9 +626,7 @@ class Bullet {
         ship.onHit();
         return;
     }
-    const ctx = document.querySelector('.screen').getContext('2d');
-    ctx.fillStyle = '#f00';
-    ctx.fillRect(Math.round(this._pos.x - 2), Math.round(this._pos.y - 2), 4, 4);
+    screen.drawCircle(this._pos, 3, [255, 192, 192]);
   }
 }
 
@@ -523,18 +657,17 @@ let shots;
 let bullets;
 
 function update() {
-  const ctx = document.querySelector('.screen').getContext('2d');
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, 256, 256);
   if (enemies.isEmpty) {
     stage.goToNextStage();
   }
+  screen.beginFrame();
   stage.update();
   ship.update();
   enemies.update();
   shots.update();
   bullets.update();
   controller.updatePrev();
+  screen.endFrame();
 }
 
 onload = () => {
