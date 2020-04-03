@@ -33,34 +33,26 @@ const stageDatas = [
       "#                              #",
       "#                              #",
       "################################",
-    ]
+    ],
+    objects: {
+      "a": {
+        type: "Enemy0",
+      },
+    }
   },
   {
     table: [
       "################################",
       "#                              #",
+      "# a                            #",
       "#                              #",
       "#                              #",
       "#                              #",
       "#                              #",
       "#                              #",
       "#                              #",
-      "#          ##########          #",
       "#                              #",
       "#                              #",
-      "#       #              #       #",
-      "#       #   a      a   #       #",
-      "#       #              #       #",
-      "#       #              #       #",
-      "#       #              #       #",
-      "#       #              #       #",
-      "#       #              #       #",
-      "#       #              #       #",
-      "#       #   a      a   #       #",
-      "#       #              #       #",
-      "#                              #",
-      "#                              #",
-      "#          ##########          #",
       "#                              #",
       "#                              #",
       "#                              #",
@@ -68,80 +60,26 @@ const stageDatas = [
       "#                              #",
       "#              S               #",
       "#                              #",
-      "################################",
-    ]
-  },
-  {
-    table: [
-      "################################",
       "#                              #",
-      "# a                          a #",
       "#                              #",
-      "#   ########################   #",
-      "#   #                      #   #",
-      "#   #                    a #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                    a #   #",
-      "#   #                      #   #",
-      "#   #   ####################   #",
-      "#   #                          #",
-      "# S # a                      a #",
-      "#   #                          #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
+      "#                              #",
       "################################",
-    ]
-  },
-  {
-    table: [
-      "################################",
-      "#########              #########",
-      "########  a             ########",
-      "#######                  #######",
-      "######     ##########     ######",
-      "#####     #          #     #####",
-      "####     #            #     ####",
-      "###     #              #     ###",
-      "##     #                #     ##",
-      "#     #                  #     #",
-      "#    #                    #  a #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #            a         #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #                      #   #",
-      "#   #   #                  #   #",
-      "#   # a  #                #    #",
-      "#   #     #              #     #",
-      "#   ##     #            #     ##",
-      "#   ###     #          #     ###",
-      "#   ####     #        #     ####",
-      "#   #####     #      #     #####",
-      "#   ######     ######     ######",
-      "#   #######              #######",
-      "# S ########         a  ########",
-      "#   #########          #########",
-      "################################",
-    ]
+    ],
+    objects: {
+      "a": {
+        type: "SurvivalModeManager",
+      },
+    }
   },
 ];
 
@@ -173,6 +111,12 @@ class Vector2 {
   multiplyScalar(s) {
     this.x *= s;
     this.y *= s;
+    return this;
+  }
+  rotate(angleRad) {
+    const v = this.clone();
+    this.x = v.x * Math.cos(angleRad) - v.y * Math.sin(angleRad);
+    this.y = v.x * Math.sin(angleRad) + v.y * Math.cos(angleRad);
     return this;
   }
   lengthSq() {
@@ -334,17 +278,18 @@ class Screen {
     }
   }
   drawCircle(pos, radius, color) {
-    const cx = Math.floor(pos.x);
-    const cy = Math.floor(pos.y);
-    let ys = cy - radius;
-    let ye = cy + radius;
+    const cx = Math.round(pos.x);
+    const cy = Math.round(pos.y);
+    const r = Math.round(radius);
+    let ys = cy - r;
+    let ye = cy + r;
     if (ye < 0 || ys >= Screen.HEIGHT) {
       return;
     }
     ys = Math.max(ys, 0);
     ye = Math.min(ye, Screen.HEIGHT);
     for (let y = ys; y < ye; ++y) {
-      const hx = Math.floor(Math.sqrt((radius + 0.5) * (radius + 0.5) - ((y + 0.5) - cy) * ((y + 0.5) - cy)));
+      const hx = Math.round(Math.sqrt(r * r - (y + 0.5 - cy) * (y  + 0.5 - cy)));
       let xs = cx - hx;
       let xe = cx + hx;
       if (xe < 0 || xs >= Screen.WIDTH) {
@@ -399,6 +344,7 @@ class Stage {
   reset() {
     const stageData = stageDatas[this._index];
     const tableData = stageData.table;
+    const objectsData = stageData.objects;
     for (let y = 0; y < Stage.WIDTH_IN_CELL; ++y) {
       for (let x = 0; x < Stage.WIDTH_IN_CELL; ++x) {
         this._table[y][x] = tableData[y][x];
@@ -410,8 +356,22 @@ class Stage {
     bullets.reset();
     for (let y = 0; y < Stage.WIDTH_IN_CELL; ++y) {
       for (let x = 0; x < Stage.WIDTH_IN_CELL; ++x) {
-        if (this._table[y][x] === 'a') {
-          new Enemy(new Vector2(Stage.CELL_WIDTH * (x + 0.5), Stage.CELL_WIDTH * (y + 0.5)));
+        const objectChar = this._table[y][x];
+        const objectData = objectsData[objectChar];
+        if (objectData === undefined) {
+          continue;
+        }
+        const pos = new Vector2(Stage.CELL_WIDTH * (x + 0.5), Stage.CELL_WIDTH * (y + 0.5));
+        switch (objectData.type) {
+          case 'Enemy0':
+            new Enemy0(pos);
+            break;
+          case 'Enemy1':
+            new Enemy1(pos);
+            break;
+          case 'SurvivalModeManager':
+            new SurvivalModeManager();
+            break;
         }
       }
     }
@@ -507,17 +467,15 @@ class Ship {
   }
 }
 
-class Enemy {
+class Enemy0 {
   constructor(pos) {
     this._pos = new Vector2(pos);
-    this._vel = new Vector2(0, 0);
-    this._hp = 4;
+    this._hp = 1;
     this._count = 0;
     this._shouldFlash = false;
     enemies.append(this);
   }
   update() {
-    this._pos.add(this._vel);
     this._count++;
     if (this._count > 10) {
       new Bullet(this._pos, ship.position.clone().sub(this._pos).normalize().multiplyScalar(8));
@@ -540,6 +498,74 @@ class Enemy {
       enemies.remove(this);
     }
   }
+}
+
+class Enemy1 {
+  constructor(pos) {
+    this._pos = new Vector2(pos);
+    this._hp = 6;
+    this._count = 0;
+    this._shouldFlash = false;
+    enemies.append(this);
+  }
+  update() {
+    const vel = ship.position.clone().sub(this._pos).normalize().multiplyScalar(1);
+    this._pos.add(vel);
+    stage.pushOut(this._pos, 4);
+    this._count++;
+    if (this._count > 10) {
+      for (let i = -1; i <= 1; ++i) {
+        new Bullet(this._pos, ship.position.clone().sub(this._pos).normalize().rotate(Math.PI / 8 * i).multiplyScalar(8));
+      }
+      this._count = 0;
+    }
+    let color = [224, 128, 128];
+    if (this._shouldFlash) {
+      color = [255, 255, 255];
+      this._shouldFlash = false;
+    }
+    screen.drawCircle(this._pos, 4, color);
+  }
+  isHit(pos, offset = 0) {
+    return pos.clone().sub(this._pos).length() <= 4 + offset;
+  }
+  onHit(pos) {
+    this._hp--;
+    this._shouldFlash = true;
+    if (this._hp <= 0) {
+      enemies.remove(this);
+    }
+  }
+}
+
+class SurvivalModeManager {
+  constructor(pos) {
+    this._count = 0;
+    this._countToCreateEnemy = 0;
+    enemies.append(this);
+  }
+  update() {
+    let co = 0;
+    this._countToCreateEnemy--;
+    if (this._countToCreateEnemy <= 0) {
+      let pos = new Vector2(
+        Stage.CELL_WIDTH * ((Stage.WIDTH_IN_CELL - 2) * Math.random() + 1.5),
+        Stage.CELL_WIDTH * (Math.floor(2 * Math.random()) === 0 ? 1.5 : Stage.WIDTH_IN_CELL - 1.5)
+      );
+      if (Math.floor(2 * Math.random()) === 0) {
+        pos = new Vector2(pos.y, pos.x);
+      }
+      new Enemy1(pos);
+      if (this._count < 60 * 10) {
+        this._countToCreateEnemy = 80 - Math.floor(60 * (this._count / (60 * 10)));
+      } else {
+        this._countToCreateEnemy = 20;
+      }
+    }
+    this._count++;
+  }
+  isHit(pos, offset = 0) { return false; }
+  onHit(pos) {}
 }
 
 class Enemies {
@@ -626,7 +652,7 @@ class Bullet {
         ship.onHit();
         return;
     }
-    screen.drawCircle(this._pos, 3, [255, 192, 192]);
+    screen.drawCircle(this._pos, 2, [255, 192, 192]);
   }
 }
 
