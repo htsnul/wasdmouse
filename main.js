@@ -570,16 +570,29 @@ class Ship {
   constructor() {
     this._pos = new Vector2();
     this._vel = new Vector2();
+    this._isDead = false;
     this._countToShot = 0;
+    this._deadWaitCountToRestart = 0;
   }
   reset(pos) {
+    this._isDead = 0;
     this._pos = pos;
     this._vel = new Vector2();
   }
   get position() {
     return this._pos;
   }
+  get isDead() {
+    return this._isDead;
+  }
   update() {
+    if (this._isDead) {
+      this._deadWaitCountToRestart--;
+      if (this._deadWaitCountToRestart <= 0) {
+        stage.goToFirstStage();
+      }
+      return;
+    }
     const velSign = new Vector2();
     if (controller.isButtonHeld('KEY_A')) {
       velSign.x = -1;
@@ -605,11 +618,12 @@ class Ship {
     screen.drawCircle(this._pos, 4, [224, 224, 255]);
   }
   isHit(pos) {
-    return pos.clone().sub(this._pos).length() <= 4;
+    return !this._isDead && pos.clone().sub(this._pos).length() <= 4;
   }
   onHit(pos) {
     new Explosion(this._pos, 4);
-    stage.goToFirstStage();
+    this._isDead = true;
+    this._deadWaitCountToRestart = 3 * 10;
   }
 }
 
@@ -746,13 +760,15 @@ class SurvivalModeManager {
         new Enemy1(pos);
       }
       this._createdEnemyCount++;
-      if (this._count < 2 * 60 * 10) {
-        this._countToCreateEnemy = 60 - Math.floor(40 * (this._count / (2 * 60 * 10)));
+      if (this._count < 3 * 60 * 10) {
+        this._countToCreateEnemy = 50 - Math.floor(25 * (this._count / (3 * 60 * 10)));
       } else {
-        this._countToCreateEnemy = 20;
+        this._countToCreateEnemy = 25;
       }
     }
-    this._count++;
+    if (!ship.isDead) {
+      this._count++;
+    }
     screen.drawText(new Vector2(16, 16), (this._count / 10).toFixed(1), [255, 255, 255]);
   }
 }
