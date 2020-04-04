@@ -34,7 +34,7 @@ const stageDatas = [
       "#                              #",
       "################################",
     ],
-    objects: {
+    enemies: {
       "a": {
         type: "Enemy0",
       },
@@ -75,7 +75,7 @@ const stageDatas = [
       "#                              #",
       "################################",
     ],
-    objects: {
+    enemies: {
       "a": {
         type: "SurvivalModeManager",
       },
@@ -344,7 +344,7 @@ class Stage {
   reset() {
     const stageData = stageDatas[this._index];
     const tableData = stageData.table;
-    const objectsData = stageData.objects;
+    const enemiesData = stageData.enemies;
     for (let y = 0; y < Stage.WIDTH_IN_CELL; ++y) {
       for (let x = 0; x < Stage.WIDTH_IN_CELL; ++x) {
         this._table[y][x] = tableData[y][x];
@@ -356,13 +356,13 @@ class Stage {
     bullets.reset();
     for (let y = 0; y < Stage.WIDTH_IN_CELL; ++y) {
       for (let x = 0; x < Stage.WIDTH_IN_CELL; ++x) {
-        const objectChar = this._table[y][x];
-        const objectData = objectsData[objectChar];
-        if (objectData === undefined) {
+        const ch = this._table[y][x];
+        const enemyData = enemiesData[ch];
+        if (enemyData === undefined) {
           continue;
         }
         const pos = new Vector2(Stage.CELL_WIDTH * (x + 0.5), Stage.CELL_WIDTH * (y + 0.5));
-        switch (objectData.type) {
+        switch (enemyData.type) {
           case 'Enemy0':
             new Enemy0(pos);
             break;
@@ -463,6 +463,7 @@ class Ship {
     return pos.clone().sub(this._pos).length() <= 4;
   }
   onHit(pos) {
+    new Explosion(this._pos, 4);
     stage.goToFirstStage();
   }
 }
@@ -495,6 +496,7 @@ class Enemy0 {
     this._hp--;
     this._shouldFlash = true;
     if (this._hp <= 0) {
+      new Explosion(this._pos, 4);
       enemies.remove(this);
     }
   }
@@ -533,6 +535,7 @@ class Enemy1 {
     this._hp--;
     this._shouldFlash = true;
     if (this._hp <= 0) {
+      new Explosion(this._pos, 4);
       enemies.remove(this);
     }
   }
@@ -564,8 +567,6 @@ class SurvivalModeManager {
     }
     this._count++;
   }
-  isHit(pos, offset = 0) { return false; }
-  onHit(pos) {}
 }
 
 class Enemies {
@@ -585,7 +586,7 @@ class Enemies {
     return this._enemies.length === 0;
   }
   findHit(pos, offset = 0) {
-    return this._enemies.find(e => e.isHit(pos, offset));
+    return this._enemies.find(e => e.isHit && e.isHit(pos, offset));
   }
   update() {
     this._enemies.forEach(enemy => enemy.update());
@@ -601,16 +602,18 @@ class Shot {
   update() {
     this._pos.add(this._vel);
     if (stage.isHit(this._pos)) {
+      new Explosion(this._pos, 2);
       shots.remove(this);
       return;
     }
     {
-        const hitEnemy = enemies.findHit(this._pos, 4);
-        if (hitEnemy !== undefined) {
-            hitEnemy.onHit();
-            shots.remove(this);
-            return;
-        }
+      const hitEnemy = enemies.findHit(this._pos, 4);
+      if (hitEnemy !== undefined) {
+        hitEnemy.onHit();
+        new Explosion(this._pos, 2);
+        shots.remove(this);
+        return;
+      }
     }
     screen.drawCircle(this._pos, 2, [128, 128, 255]);
   }
@@ -645,12 +648,15 @@ class Bullet {
     this._pos.add(this._vel);
     this._count++;
     if (stage.isHit(this._pos)) {
+      new Explosion(this._pos, 2);
       bullets.remove(this);
       return;
     }
     if (ship.isHit(this._pos)) {
-        ship.onHit();
-        return;
+      ship.onHit();
+      new Explosion(this._pos, 2);
+      bullets.remove(this);
+      return;
     }
     screen.drawCircle(this._pos, 2, [255, 192, 192]);
   }
@@ -674,6 +680,49 @@ class Bullets {
   }
 }
 
+class Explosion {
+  constructor(pos, sourceRadius) {
+    this._pos = new Vector2(pos);
+    this._sourceRadius = sourceRadius;
+    this._count = 0;
+    this._fragmentCount = Math.max(1, 4 * Math.floor(sourceRadius / 4));
+    this._fragmentVel = (this._fragmentCount === 1) ? 0 : sourceRadius / 2;
+    effects.append(this);
+  }
+  update() {
+    if (this._count >= 4) {
+      effects.remove(this);
+      return;
+    }
+    for (let i = 0; i < this._fragmentCount; ++i) {
+      screen.drawCircle(
+        this._pos.clone().add((new Vector2(this._fragmentVel * this._count, 0)).rotate((i / this._fragmentCount) * 2 * Math.PI)),
+        this._sourceRadius * 1.5 * (1 - (this._count / 4)),
+        [255 - 64 * this._count, 255 - 64 * this._count, 255 - 64 * this._count]
+      );
+    }
+    this._count++;
+  }
+}
+
+class Effects {
+  constructor() {
+    this._effects = [];
+  }
+  reset() {
+    this._effects = [];
+  }
+  append(effect) {
+    this._effects.push(effect);
+  }
+  remove(effect) {
+    this._effects = this._effects.filter(s => s !== effect);
+  }
+  update() {
+    this._effects.forEach(effect => effect.update());
+  }
+}
+
 let controller;
 let screen;
 let stage;
@@ -681,6 +730,7 @@ let ship;
 let enemies;
 let shots;
 let bullets;
+let effects;
 
 function update() {
   if (enemies.isEmpty) {
@@ -692,6 +742,7 @@ function update() {
   enemies.update();
   shots.update();
   bullets.update();
+  effects.update();
   controller.updatePrev();
   screen.endFrame();
 }
@@ -704,6 +755,7 @@ onload = () => {
   enemies = new Enemies();
   shots = new Shots();
   bullets = new Bullets();
+  effects = new Effects();
   stage.reset();
   setInterval(update, 100);
 };
