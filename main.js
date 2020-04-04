@@ -457,7 +457,7 @@ class Ship {
       new Shot(this._pos, controller.mousePosition.clone().sub(this._pos).normalize().multiplyScalar(8));
       this._countToShot = 4;
     }
-    screen.drawCircle(this._pos, 4, [255, 255, 255]);
+    screen.drawCircle(this._pos, 4, [224, 224, 255]);
   }
   isHit(pos) {
     return pos.clone().sub(this._pos).length() <= 4;
@@ -505,6 +505,43 @@ class Enemy0 {
 class Enemy1 {
   constructor(pos) {
     this._pos = new Vector2(pos);
+    this._hp = 3;
+    this._count = 0;
+    this._shouldFlash = false;
+    enemies.append(this);
+  }
+  update() {
+    const vel = ship.position.clone().sub(this._pos).normalize().multiplyScalar(1);
+    this._pos.add(vel);
+    stage.pushOut(this._pos, 4);
+    this._count++;
+    if (this._count > 10) {
+      new Bullet(this._pos, ship.position.clone().sub(this._pos).normalize().multiplyScalar(8));
+      this._count = 0;
+    }
+    let color = [224, 128, 128];
+    if (this._shouldFlash) {
+      color = [255, 255, 255];
+      this._shouldFlash = false;
+    }
+    screen.drawCircle(this._pos, 4, color);
+  }
+  isHit(pos, offset = 0) {
+    return pos.clone().sub(this._pos).length() <= 4 + offset;
+  }
+  onHit(pos) {
+    this._hp--;
+    this._shouldFlash = true;
+    if (this._hp <= 0) {
+      new Explosion(this._pos, 4);
+      enemies.remove(this);
+    }
+  }
+}
+
+class Enemy2 {
+  constructor(pos) {
+    this._pos = new Vector2(pos);
     this._hp = 6;
     this._count = 0;
     this._shouldFlash = false;
@@ -521,7 +558,7 @@ class Enemy1 {
       }
       this._count = 0;
     }
-    let color = [224, 128, 128];
+    let color = [255, 128, 128];
     if (this._shouldFlash) {
       color = [255, 255, 255];
       this._shouldFlash = false;
@@ -545,6 +582,7 @@ class SurvivalModeManager {
   constructor(pos) {
     this._count = 0;
     this._countToCreateEnemy = 0;
+    this._createdEnemyCount = 0;
     enemies.append(this);
   }
   update() {
@@ -558,9 +596,14 @@ class SurvivalModeManager {
       if (Math.floor(2 * Math.random()) === 0) {
         pos = new Vector2(pos.y, pos.x);
       }
-      new Enemy1(pos);
-      if (this._count < 60 * 10) {
-        this._countToCreateEnemy = 80 - Math.floor(60 * (this._count / (60 * 10)));
+      if (this._createdEnemyCount % 5 === 4) {
+        new Enemy2(pos);
+      } else {
+        new Enemy1(pos);
+      }
+      this._createdEnemyCount++;
+      if (this._count < 2 * 60 * 10) {
+        this._countToCreateEnemy = 60 - Math.floor(40 * (this._count / (2 * 60 * 10)));
       } else {
         this._countToCreateEnemy = 20;
       }
