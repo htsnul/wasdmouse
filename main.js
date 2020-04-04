@@ -1,3 +1,116 @@
+const charImageDatas = {
+  "1": [
+    "   #    ",
+    "  ##    ",
+    "   #    ",
+    "   #    ",
+    "   #    ",
+    "   #    ",
+    "  ###   ",
+    "        ",
+  ],
+  "2": [
+    " #####  ",
+    "#     # ",
+    "      # ",
+    "  ####  ",
+    " #      ",
+    "#       ",
+    "####### ",
+    "        ",
+  ],
+  "3": [
+    " #####  ",
+    "#     # ",
+    "      # ",
+    "  ####  ",
+    "      # ",
+    "#     # ",
+    " #####  ",
+    "        ",
+  ],
+  "4": [
+    "   # #  ",
+    "  #  #  ",
+    " #   #  ",
+    "#    #  ",
+    "#    #  ",
+    "####### ",
+    "     #  ",
+    "        ",
+  ],
+  "5": [
+    "####### ",
+    "#       ",
+    "#       ",
+    "######  ",
+    "      # ",
+    "#     # ",
+    " #####  ",
+    "        ",
+  ],
+  "6": [
+    " #####  ",
+    "#       ",
+    "#       ",
+    "######  ",
+    "#     # ",
+    "#     # ",
+    " #####  ",
+    "        ",
+  ],
+  "7": [
+    "####### ",
+    "      # ",
+    "      # ",
+    "     #  ",
+    "    #   ",
+    "   #    ",
+    "  #     ",
+    "        ",
+  ],
+  "8": [
+    " #####  ",
+    "#     # ",
+    "#     # ",
+    " #####  ",
+    "#     # ",
+    "#     # ",
+    " #####  ",
+    "        ",
+  ],
+  "9": [
+    " #####  ",
+    "#     # ",
+    "#     # ",
+    " ###### ",
+    "      # ",
+    "      # ",
+    " #####  ",
+    "        ",
+  ],
+  "0": [
+    " #####  ",
+    "##    # ",
+    "# #   # ",
+    "#  #  # ",
+    "#   # # ",
+    "#    ## ",
+    " #####  ",
+    "        ",
+  ],
+  ".": [
+    "        ",
+    "        ",
+    "        ",
+    "        ",
+    "        ",
+    "  ##    ",
+    "  ##    ",
+    "        ",
+  ],
+};
+
 const stageDatas = [
   {
     table: [
@@ -305,6 +418,38 @@ class Screen {
       }
     }
   }
+  drawText(pos, text, color) {
+    Array.from(text).forEach(
+      (ch, i) => this.drawChar(new Vector2(pos.x + 8 * i, pos.y), ch, color)
+    );
+  }
+  drawChar(pos, ch, color) {
+    let xs = Math.floor(pos.x);
+    let xe = xs + 8;
+    let ys = Math.floor(pos.y);
+    let ye = ys + 8;
+    if (xe < 0 || xs >= Screen.WIDTH || ye < 0 || ys >= Screen.HEIGHT) {
+      return;
+    }
+    let sxs = Math.max(0, -xs);
+    let sys = Math.max(0, -ys);
+    xs = Math.max(xs, 0);
+    xe = Math.min(xe, Screen.WIDTH);
+    ys = Math.max(ys, 0);
+    ye = Math.min(ye, Screen.HEIGHT);
+    const charImageData = charImageDatas[ch];
+    for (let y = ys, sy = sys; y < ye; ++y, ++sy) {
+      for (let x = xs, sx = sxs; x < xe; ++x, ++sx) {
+        const i = Screen.WIDTH * y + x;
+        if (charImageData[sy][sx] === ' ') {
+          continue;
+        }
+        this._imageData.data[4 * i + 0] = color[0];
+        this._imageData.data[4 * i + 1] = color[1];
+        this._imageData.data[4 * i + 2] = color[2];
+      }
+    }
+  }
 }
 
 class Stage {
@@ -586,7 +731,6 @@ class SurvivalModeManager {
     enemies.append(this);
   }
   update() {
-    let co = 0;
     this._countToCreateEnemy--;
     if (this._countToCreateEnemy <= 0) {
       let pos = new Vector2(
@@ -609,6 +753,7 @@ class SurvivalModeManager {
       }
     }
     this._count++;
+    screen.drawText(new Vector2(16, 16), (this._count / 10).toFixed(1), [255, 255, 255]);
   }
 }
 
